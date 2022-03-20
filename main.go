@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,6 +19,8 @@ const (
 var (
 	awswiPath string
 	credPath  string
+
+	showList *bool
 )
 
 func init() {
@@ -31,6 +34,9 @@ func init() {
 
 	awswiPath = filepath.Join(home, awsDir, awswiFile)
 	credPath = filepath.Join(home, awsDir, credFile)
+
+	showList = flag.Bool("ls", false, "show list")
+	flag.Parse()
 }
 
 func main() {
@@ -42,15 +48,29 @@ func main() {
 
 	ps := crs.SectionStrings()
 
+	if *showList {
+		showProfiles(ps)
+	} else {
+		setProfile(ps)
+	}
+}
+
+func showProfiles(ps []string) {
+	for _, s := range ps {
+		fmt.Println(s)
+	}
+}
+
+func setProfile(ps []string) {
 	var t string
 
-	args := os.Args
-	if len(args) < 2 {
-		// todo
+	args := flag.Args()
+	if len(args) < 1 {
+		// todo fzf
 		fmt.Println("must specify target")
 		return
 	} else {
-		t = args[1]
+		t = args[0]
 	}
 
 	if !slices.Contains(ps, t) {
@@ -64,9 +84,8 @@ func main() {
 		return
 	}
 
-	c := fmt.Sprintf("export AWS_PROFILE=%s", t)
-
-	_, err = f.Write([]byte(c))
+	cmd := fmt.Sprintf("export AWS_PROFILE=%s", t)
+	_, err = f.Write([]byte(cmd))
 	if err != nil {
 		fmt.Println(err.Error())
 		return
